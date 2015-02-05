@@ -25,7 +25,7 @@ class smart_fuse_networker(object):
     request = urllib2.Request(self.apiURL+"/api/hub?"+data)
     response = urllib2.urlopen(request)
     page = response.read()
-    return json.loads(page)
+    return json.loads(page);
 
   def sendFuseData(self,value,fuseid):
     """
