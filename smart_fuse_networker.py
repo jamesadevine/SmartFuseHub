@@ -33,6 +33,7 @@ class smart_fuse_networker(object):
     """
     data = {
         "userID":self.userID,
+        "hubID":self.hubID,
         "fuseID":fuseid,
         "fuseVal":value
     }

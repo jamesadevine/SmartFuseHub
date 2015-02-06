@@ -16,9 +16,9 @@ class serial_listener(object):
     sampleCount=int(binaryResult[12:24][::-1],2)
     totalVal=int(binaryResult[24:48][::-1],2)
     checkSum=int(binaryResult[48:56][::-1],2) 
-    ourCheckSum = 0+[int(binaryResult[i:i+8][::-1],2) for i in range(0, len(binaryResult), 8)]
-    ourCheckSum = ourCheckSum%255
-    print "received checksum "+str(checkSum)+" calculated: "+str(ourCheckSum)
+    #ourCheckSum = 0+[int(binaryResult[i:i+8][::-1],2) for i in range(0, len(binaryResult), 8)]
+    #ourCheckSum = ourCheckSum%255
+    #print "received checksum "+str(checkSum)+" calculated: "+str(ourCheckSum)
     #ourCheckSum
     voltage = 0
     
@@ -49,7 +49,7 @@ class serial_listener(object):
           dataList[count] = value
           count+=1
           if(count==7):
-            thread = threading.Thread(target=self.output, args=(dataList))
+            thread = threading.Thread(target=self.output, args=(dataList,))
             thread.daemon = True
             thread.start()
             dataList = [0,0,0,0,0,0,0]
