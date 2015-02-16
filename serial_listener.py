@@ -1,61 +1,50 @@
 import serial
 import struct
 import time
-import threading
+import datetime
+from serial_decoder import serial_decoder
 
 class serial_listener(object):
   def __init__(self,networker):
     self.ser = serial.Serial("/dev/ttyAMA0", baudrate=9600)
     self.networker = networker
 
-
-  def output(self,valList):
-    binaryString = ''.join('{0:08b}'.format(valList[i])[::-1] for i in range(len(valList)))
-    binaryResult=binaryString
-    id=int(binaryResult[0:12][::-1],2)
-    sampleCount=int(binaryResult[12:24][::-1],2)
-    totalVal=int(binaryResult[24:48][::-1],2)
-    checkSum=int(binaryResult[48:56][::-1],2) 
-    #ourCheckSum = 0+[int(binaryResult[i:i+8][::-1],2) for i in range(0, len(binaryResult), 8)]
-    #ourCheckSum = ourCheckSum%255
-    #print "received checksum "+str(checkSum)+" calculated: "+str(ourCheckSum)
-    #ourCheckSum
-    voltage = 0
-    
-    #line=[binaryResult[i:i+8] for i in range(0, len(binaryResult), 8)]
-    if sampleCount>0:
-      voltage = float((float(5000/4095)*(float(totalVal)/float(sampleCount)))/1000)
-
-    self.networker.sendFuseData(voltage,id)
-
-  #print "ID: "+str(idVal)+" sample count: "+str(sampleCount)+" total: "+str(totalVal)+" checkSum: "+str(checkSum) +" Apparent voltage: "+str(voltage)
-  #print "RESULT: "+'||'.join(line)+" LEN: "+str(len(binaryResult))
-  #binaryResult=""
-
   def listen(self):
     count = 0
-    dataList = [0,0,0,0,0,0,0]
-    previousVal = -1
+    #8:4 hamming coding... which means for every 4 bits, 8 are produced.
+    dataList = [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     transmissonFlag = False
+    last_received=datetime.datetime.now()
     try:
       while True:
         read = self.ser.read()
         value = struct.unpack('B',read)[0]
-        print value
-
-        if(previousVal == 0 and value != 0 and transmissonFlag == False ):
+        print str(value)
+        if value == 85 and transmissonFlag == False:
+          print 'flag set'
           transmissonFlag=True
-        if(transmissonFlag):
+          last_received = datetime.datetime.now()
+        print str(transmissonFlag)+' '+str(datetime.datetime.now().microsecond - last_received.microsecond < 10000)
+        while transmissonFlag and (datetime.datetime.now().microsecond - last_received.microsecond < 10000):
+          print 'in loop'
+          read = self.ser.read()
+          value = struct.unpack('B',read)[0]
           dataList[count] = value
           count+=1
-          if(count==7):
-            thread = threading.Thread(target=self.output, args=(dataList,))
-            thread.daemon = True
-            thread.start()
-            dataList = [0,0,0,0,0,0,0]
+          last_received = datetime.datetime.now()
+          if(count==14):
+            print 'starting serial decoder '+str(dataList)
+            decoder = serial_decoder(self.networker, dataList)
+            decoder.daemon = True
+            decoder.start()
+            dataList = [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
             count=0
             transmissonFlag = False
-        previousVal = value
+        #else:
+          #print 'resetting'
+          #dataList = [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+          #count=0
+          #transmissonFlag = False
         time.sleep(0)
     except Exception as e:
       print e

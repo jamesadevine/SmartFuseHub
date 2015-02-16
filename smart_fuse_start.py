@@ -27,4 +27,6 @@ print "Credentials obtained, starting serial_listener..."
 
 listener = serial_listener(networker)
 
+print "Listening..."
+
 listener.listen()
