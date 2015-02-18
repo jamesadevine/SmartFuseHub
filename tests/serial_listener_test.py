@@ -23,6 +23,7 @@ class serial_listener(object):
     # create logger
     self.listener_logger = logging.getLogger('SmartFuse Listener Logger')
     self.listener_logger.setLevel(logging.DEBUG) # log all escalated at and above DEBUG
+    
     # add a file handler
     fh = logging.FileHandler(listener_prefix + str(test_count)+'.csv')
     fh.setLevel(logging.DEBUG) # ensure all messages are logged to file
