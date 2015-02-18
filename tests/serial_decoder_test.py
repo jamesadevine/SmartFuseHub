@@ -1,10 +1,46 @@
 from multiprocessing import Process
-
+import os.path
+import logging
 
 class serial_decoder(Process):
         
-  def __init__(self, values):
+  def __init__(self, values,baud,cable_length,packet_number):
     super(serial_decoder, self).__init__()
+
+    self.packet_number = packet_number
+
+    decoder_prefix = 'decoder_'+str(baud)+'_'+str(cable_length)+'_'
+
+    test_count = 1
+
+    while os.path.isfile(decoder_prefix + str(test_count)+'.csv'):
+      test_count += 1
+
+    # create logger
+    self.decoder_logger = logging.getLogger('SmartFuse Decoder Logger')
+    self.decoder_logger.setLevel(logging.DEBUG) # log all escalated at and above DEBUG
+    # add a file handler
+    fh = logging.FileHandler(decoder_prefix + str(test_count)+'.csv')
+    fh.setLevel(logging.DEBUG) # ensure all messages are logged to file
+
+    # create a formatter and set the formatter for the handler.
+    frmt = logging.Formatter('%(message)s')
+    fh.setFormatter(frmt)
+
+    # add the Handler to the logger
+    self.decoder_logger.addHandler(fh)
+
+    self.decoder_logger.debug('Time,Packet Number,Bit Error,Discarded,Reason,Details') 
+    frmt = logging.Formatter('%(asctime)s.%(msecs)d,%(message)s',"%H:%M:%S")
+    fh.setFormatter(frmt)
+    self.decoder_logger.addHandler(fh)
+
+    self.bit_error = 0
+    self.check_sum_rec = 0
+    self.check_sum = 0
+    self.incorrect_index = 0
+    self.corrected_val = 0
+
 
     #returns the incorrect bit for hamming code.
     self.truth_table_lookup = {
@@ -19,7 +55,15 @@ class serial_decoder(Process):
     }
     try:
       self.decode(values)
-    except:
+    except Exception,e:
+
+      #-1 for checksum error
+      if str(e) == 'Check sum incorrect':
+        self.decoder_logger.debug(str(self.packet_number)+','+str(self.bit_error)+',1,-1,Checksum incorrect| Received:'+str(self.check_sum_rec)+' | Calculated:'+str(self.check_sum))
+      
+      #-2 for uncorrectable packet...
+      if str(e) == 'Uncorrectable packet':
+        self.decoder_logger.debug(str(self.packet_number)+','+str(self.bit_error)+',1,-2,Uncorrectable packet')
       self.terminate()
 
   def decode(self,values):
@@ -32,18 +76,23 @@ class serial_decoder(Process):
     totalVal=int(binaryResult[24:48][::-1],2)
     check_sum=int(binaryResult[48:56][::-1],2) 
     calculated_check_sum = self.calculate_checksum(values)
-    print str(check_sum)+' '+str(calculated_check_sum)
+
+    self.check_sum_rec = check_sum
+    self.check_sum = calculated_check_sum
+
     if calculated_check_sum != check_sum:
       raise Exception("Check sum incorrect")
       return
-    print "received checksum "+str(check_sum)+" calculated: "+str(calculated_check_sum)
-    #ourCheckSum
+
     voltage = 0
     
     if sampleCount>0:
       voltage = float((float(5000/4095)*(float(totalVal)/float(sampleCount)))/1000)
 
-    self.networker.sendFuseData(voltage,id)
+    if self.incorrect_index == 0 and self.corrected_val == 0:
+      self.decoder_logger.debug(str(self.packet_number)+','+str(self.bit_error)+',0,0,Everything is fine | voltage:'+str(voltage))
+    else:
+      self.decoder_logger.debug(str(self.packet_number)+','+str(self.bit_error)+',0,0,Had to correct one bit | corrected bit:'+str(self.incorrect_index))+' | new value:'+str(self.corrected_val)
 
   def calculate_checksum(self,values):
     checksum = 0
@@ -72,22 +121,22 @@ class serial_decoder(Process):
     check1 = self.calculate_parity_specific(value,[7, 5, 1, 0])
     check2 = self.calculate_parity_specific(value,[7, 3, 2, 1])
     check3 = self.calculate_parity_specific(value,[5, 4, 3, 1])
-    print 'current value: '+str(value)
-    print 'overall '+str(parity)
-    print 'check1 '+str(check1)
-    print 'check2 '+str(check2)
-    print 'check3 '+str(check3)
 
     #one bit error which can be corrected
     if not parity:
       if self.is_correctable(check1,check2,check3):
+        self.bit_error=1
         #determine which bit is wrong!
         incorrect_index = self.truth_table_lookup[(check1,check2,check3)]
         #correct the value...
         value = self.toggle_bit(value,incorrect_index)
+
+        self.incorrect_index = incorrect_index
+        self.corrected_val = value
         print 'incorrect index: '+str(incorrect_index)
         print 'new val = '+str(value)
       else:
+        self.bit_error = 2
         #raise the exception to terminate the thread...
         raise Exception("Uncorrectable packet")
         return
