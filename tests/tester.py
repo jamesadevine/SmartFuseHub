@@ -32,4 +32,5 @@ if baud not in baud_rates:
 
 from serial_listener_test import serial_listener
 serial_listener = serial_listener(baud,cable_length)
+serial_listener.listen()
 

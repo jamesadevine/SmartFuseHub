@@ -1,39 +1,14 @@
 from multiprocessing import Process
-import os.path
 import logging
 
 class serial_decoder(Process):
         
-  def __init__(self, values,baud,cable_length,packet_number):
+  def __init__(self, values,decoder_logger,packet_number,test_count):
     super(serial_decoder, self).__init__()
 
+    self.decoder_logger = decoder_logger
+
     self.packet_number = packet_number
-
-    decoder_prefix = 'decoder_'+str(baud)+'_'+str(cable_length)+'_'
-
-    test_count = 1
-
-    while os.path.isfile(decoder_prefix + str(test_count)+'.csv'):
-      test_count += 1
-
-    # create logger
-    self.decoder_logger = logging.getLogger('SmartFuse Decoder Logger')
-    self.decoder_logger.setLevel(logging.DEBUG) # log all escalated at and above DEBUG
-    # add a file handler
-    fh = logging.FileHandler(decoder_prefix + str(test_count)+'.csv')
-    fh.setLevel(logging.DEBUG) # ensure all messages are logged to file
-
-    # create a formatter and set the formatter for the handler.
-    frmt = logging.Formatter('%(message)s')
-    fh.setFormatter(frmt)
-
-    # add the Handler to the logger
-    self.decoder_logger.addHandler(fh)
-
-    self.decoder_logger.debug('Time,Packet Number,Bit Error,Discarded,Reason,Details') 
-    frmt = logging.Formatter('%(asctime)s.%(msecs)d,%(message)s',"%H:%M:%S")
-    fh.setFormatter(frmt)
-    self.decoder_logger.addHandler(fh)
 
     self.bit_error = 0
     self.check_sum_rec = 0
@@ -68,7 +43,7 @@ class serial_decoder(Process):
 
   def decode(self,values):
     values=self.convert_packet(values)
-    print str(values)
+    #print str(values)
     binaryString = ''.join('{0:08b}'.format(values[i])[::-1] for i in range(len(values)))
     binaryResult=binaryString
     id=int(binaryResult[0:12][::-1],2)
@@ -108,7 +83,7 @@ class serial_decoder(Process):
     valCount=0;
     for i in range(0,len(values),2):
       temp = self.transpose(values[i+1])+self.transpose(values[i])
-      print 'binary string: '+temp
+      ##print 'binary string: '+temp
       newValues[valCount] = int(temp,2)
       valCount+=1
     return newValues
@@ -133,8 +108,8 @@ class serial_decoder(Process):
 
         self.incorrect_index = incorrect_index
         self.corrected_val = value
-        print 'incorrect index: '+str(incorrect_index)
-        print 'new val = '+str(value)
+        #print 'incorrect index: '+str(incorrect_index)
+        #print 'new val = '+str(value)
       else:
         self.bit_error = 2
         #raise the exception to terminate the thread...
@@ -143,7 +118,7 @@ class serial_decoder(Process):
 
     value = self.get_nibble(value)
 
-    print 'actual value '+str(value)
+    #print 'actual value '+str(value)
     return value
 
   def is_correctable(self, a, b, c):
