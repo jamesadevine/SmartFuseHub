@@ -19,10 +19,8 @@ class serial_decoder(Process):
       (True,False,False):3,
       (False,False,False):1,
     }
-    try:
-      self.decode(values)
-    except:
-      self.terminate()
+    
+    self.decode(values)
 
   def decode(self,values):
     values=self.convert_packet(values)
