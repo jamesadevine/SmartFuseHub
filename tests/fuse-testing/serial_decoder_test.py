@@ -16,6 +16,8 @@ class serial_decoder(Process):
     self.incorrect_index = 0
     self.corrected_val = 0
 
+    self.transposed_values=''
+
 
     #returns the incorrect bit for hamming code.
     self.truth_table_lookup = {
@@ -34,12 +36,12 @@ class serial_decoder(Process):
 
       #-1 for checksum error
       if str(e) == 'Check sum incorrect':
-        self.decoder_logger.debug(str(self.packet_number)+','+str(self.bit_error)+',1,-1,Checksum incorrect| Received:'+str(self.check_sum_rec)+' | Calculated:'+str(self.check_sum))
+        self.decoder_logger.debug(str(self.packet_number)+','+str(self.bit_error)+',1,-1,Checksum incorrect '+self.transposed_values)
       
       #-2 for uncorrectable packet...
       if str(e) == 'Uncorrectable packet':
-        self.decoder_logger.debug(str(self.packet_number)+','+str(self.bit_error)+',1,-2,Uncorrectable packet')
-      self.terminate()
+        self.decoder_logger.debug(str(self.packet_number)+','+str(self.bit_error)+',1,-2,Uncorrectable packet:'+str(values))
+      return
 
   def decode(self,values):
     values=self.convert_packet(values)
@@ -52,8 +54,9 @@ class serial_decoder(Process):
     check_sum=int(binaryResult[48:56][::-1],2) 
     calculated_check_sum = self.calculate_checksum(values)
 
-    self.check_sum_rec = check_sum
-    self.check_sum = calculated_check_sum
+    self.transposed_values = 'ID: '+str(id)+' sampleCount: '+str(sampleCount)+' total: '+str(totalVal)+' ReceivedChk: '+str(check_sum)+' CalculatedChk:'+str(calculated_check_sum)
+
+
 
     if calculated_check_sum != check_sum:
       raise Exception("Check sum incorrect")

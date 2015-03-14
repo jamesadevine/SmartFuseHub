@@ -20,7 +20,11 @@ class serial_decoder(Process):
       (False,False,False):1,
     }
     
-    self.decode(values)
+    try:
+      self.decode(values)
+    except Exception,e:
+      print str(e)
+      return
 
   def decode(self,values):
     values=self.convert_packet(values)

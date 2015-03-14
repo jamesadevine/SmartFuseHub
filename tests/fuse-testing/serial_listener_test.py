@@ -16,9 +16,9 @@ class serial_listener(object):
     #create test results file...
     test_count = 1
 
-    listener_prefix = 'listener_'+str(baud)+'_'+str(cable_length)+'_'
+    listener_prefix = 'listener_'+str(baud)+'_'+str(cable_length).replace('.','_')+'_'
 
-    while os.path.isfile(listener_prefix + str(test_count)+'.csv'):
+    while os.path.isfile("./logs/"+listener_prefix + str(test_count)+'.csv'):
       test_count += 1
 
     self.test_count = test_count
@@ -43,7 +43,7 @@ class serial_listener(object):
     fh.setFormatter(frmt)
     self.listener_logger.addHandler(fh)
 
-    decoder_prefix = 'decoder_'+str(baud)+'_'+str(cable_length)+'_'
+    decoder_prefix = 'decoder_'+str(baud)+'_'+str(cable_length).replace('.','_')+'_'
 
     # create logger
     self.decoder_logger = logging.getLogger('SmartFuse Decoder Logger')
