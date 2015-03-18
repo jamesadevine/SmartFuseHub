@@ -70,7 +70,7 @@ class serial_decoder(Process):
     if self.incorrect_index == 0 and self.corrected_val == 0:
       self.decoder_logger.debug(str(self.packet_number)+','+str(self.bit_error)+',0,0,Everything is fine | voltage:'+str(voltage))
     else:
-      self.decoder_logger.debug(str(self.packet_number)+','+str(self.bit_error)+',0,0,Had to correct one bit | corrected bit:'+str(self.incorrect_index))+' | new value:'+str(self.corrected_val)
+      self.decoder_logger.debug(str(self.packet_number)+','+str(self.bit_error)+',0,1,Had to correct one bit | corrected bit:'+str(self.incorrect_index))+' | new value:'+str(self.corrected_val)
 
   def calculate_checksum(self,values):
     checksum = 0

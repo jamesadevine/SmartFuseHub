@@ -1,11 +1,12 @@
 import random
 
 class error_utils(object):
-  def __init__(self,correct,incorrect,uncorrect):
+  def __init__(self,correct,incorrect,uncorrect,checksum):
     #number of different packets...
     self.correct = correct
     self.incorrect = incorrect
     self.uncorrect = uncorrect
+    self.checksum = checksum
 
     #hamming code lookup table for: to_hamming
     self.hamming_lookup ={
@@ -28,9 +29,13 @@ class error_utils(object):
     }
 
     #the test packets that will be sent during generation
-    self.correct_packet = self.to_hamming([10,20,30,40,50,60,210])
-    self.incorrect_packet = [140, 21, 100, 2, 253, 2, 208, 255, 73, 94, 161, 94, 73, 182]
-    self.uncorrectable_packet = [140, 21, 100, 2, 253, 2, 208, 255, 255, 94, 161, 94, 73, 182];
+    self.correct_packet = self.to_hamming([10,20,30,40,50,60,210]) #all correct generates [140, 21, 100, 2, 253, 2, 208, 73, 73, 94, 161, 94, 73, 182]
+
+    print str(self.correct_packet)
+    self.correct_packet.append(0);
+    self.incorrect_packet = [140, 21, 100, 3, 253, 2, 208, 73, 73, 94, 161, 94, 73, 182, 1] #one incorrect value index 4
+    self.checksum_packet = [140, 21, 100, 2, 253, 2, 208, 253, 73, 94, 161, 94, 73, 182, -1] #correct-ish values incorrect check sum
+    self.uncorrectable_packet = [140, 27, 100, 3, 253, 2, 209, 73, 254, 94, 161, 94, 73, 182, -2] #two incorrect values
 
   def get_bit(self,byte,index):
       #gets the parametrised bit
@@ -62,45 +67,62 @@ class error_utils(object):
       return new_list
 
   def generate_packets(self):
-    total = self.correct+self.incorrect+self.uncorrect
+    total = self.correct+self.incorrect+self.uncorrect+ self.checksum
     return_list = []
     #ensure number of packets are the same as the constructor parameters
     correct_count = 0
     incorrect_count = 0
     uncorrect_count = 0
+    checksum_count = 0
 
     #randomly distribute packets
     while len(return_list)<total:
-      random_correct = random.randint(0,10)
-      random_incorrect = random.randint(0,10)
-      random_uncorrect = random.randint(0,10)
+      random_correct = random.randint(1,10)
+      random_incorrect = random.randint(1,10)
+      random_uncorrect = random.randint(1,10)
+      random_checksum = random.randint(1,10)
 
+      #correct packet generator
       if correct_count<self.correct:
         #account for edge case
         remaining_packets = self.correct - correct_count
-        if remaining_packets < 10:
-            random_correct = random.randint(0,remaining_packets)
+        if remaining_packets <= 10:
+            random_correct = random.randint(1,remaining_packets)
         for i in range(0,random_correct):
             return_list.append(self.correct_packet)
         correct_count += random_correct
+
+      #incorrect packet generator
       if incorrect_count<self.incorrect:
         #account for edge case
+        
         remaining_packets = self.incorrect - incorrect_count
-        if  remaining_packets< 10:
-            random_incorrect = random.randint(0,remaining_packets)
+        if  remaining_packets<=10:
+            random_incorrect = random.randint(1,remaining_packets)
         for i in range(0,random_incorrect):
             return_list.append(self.incorrect_packet)
         incorrect_count += random_incorrect
+
+      #uncorrect generator
       if uncorrect_count<self.uncorrect:
         remaining_packets = self.uncorrect - uncorrect_count
-        if remaining_packets < 10:
-            random_uncorrect = random.randint(0,remaining_packets)
+        if remaining_packets <= 10:
+            random_uncorrect = random.randint(1,remaining_packets)
         for i in range(0,random_uncorrect):
             return_list.append(self.uncorrectable_packet)
         uncorrect_count += random_uncorrect
+
+      #checksum packet generator
+      if checksum_count<self.checksum:
+        remaining_packets = self.checksum - checksum_count
+        if remaining_packets <= 10:
+            random_checksum = random.randint(1,remaining_packets)
+        for i in range(0,random_checksum):
+            return_list.append(self.checksum_packet)
+        checksum_count += random_checksum
       
       
       
 
-    print str(correct_count) +' '+str(incorrect_count)+' '+str(uncorrect_count)
+    print str(correct_count) +' '+str(incorrect_count)+' '+str(uncorrect_count)+' '+str(checksum_count)
     return return_list

@@ -1,10 +1,10 @@
-from smart_fuse_networker import smart_fuse_networker
+from smart_monitoring_networker import smart_monitoring_networker
 from serial_listener import serial_listener
 import time
 
 print "Starting networker..."
 
-networker = smart_fuse_networker()
+networker = smart_monitoring_networker()
 
 print "Obtaining credentials..."
 
@@ -12,11 +12,10 @@ credentialsObtained = False
 
 while not credentialsObtained:
   result = networker.getOwner()
-  print str(result)
-  if 'error' in result:
-    credentialsObtained=False
+  if result is None:
     print "Credentials couldn't be obtained... Is the hub linked?"
     time.sleep(30)
+    continue
   else:
     credentialsObtained=True
     networker.userID = result['hub']['ownerid']

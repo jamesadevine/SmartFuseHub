@@ -4,7 +4,7 @@ import json
 import fcntl, socket, struct
 
 
-class smart_fuse_networker(object):
+class smart_monitoring_networker(object):
   """
   This class is used for communicating with the remote server
   """
@@ -23,22 +23,27 @@ class smart_fuse_networker(object):
     data = urllib.urlencode({'macaddr':self.mac})
     print self.apiURL+"/api/hub?"+data
     request = urllib2.Request(self.apiURL+"/api/hub?"+data)
-    response = urllib2.urlopen(request)
+    response = None
+    try:
+        response = urllib2.urlopen(request)
+    except:
+        return
+        print "Unable to get owner."
     page = response.read()
     return json.loads(page);
 
-  def sendFuseData(self,value,fuseid):
+  def sendApplianceData(self,value,applianceid):
     """
-    :param data: the params to use
+    :param value: the current reported by the appliance sensor
     """
     data = {
         "userID":self.userID,
         "hubID":self.hubID,
-        "fuseID":fuseid,
-        "fuseVal":value
+        "applianceID":applianceid,
+        "applianceVal":value
     }
     data = urllib.urlencode(data)
-    request = urllib2.Request(self.apiURL+"/api/fuse",data)
+    request = urllib2.Request(self.apiURL+"/api/appliance",data)
     response = urllib2.urlopen(request)
     page = response.read()
     return json.loads(page)

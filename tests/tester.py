@@ -18,7 +18,7 @@ packet_amount = 1000
 try:
   baud = int(baud)
   cable_length = int(cable_length)
-  if len(sys.argv) is 4:
+  if sys.argv[3]:
     packet_amount = int(sys.argv[3])
 except:
   raise Exception("Not a valid baud rate or cable length")

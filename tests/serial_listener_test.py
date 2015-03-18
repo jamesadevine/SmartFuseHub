@@ -7,12 +7,11 @@ import os.path
 import logging
 
 class serial_listener(object):
-  def __init__(self,baud,cable_length, packet_amount):
+  def __init__(self,baud,cable_length):
     #baud is usually 9600
     self.ser = serial.Serial("/dev/ttyAMA0", baudrate=baud)
     self.baud = baud
     self.cable_length = cable_length
-    self.packet_amount = packet_amount
 
     #create test results file...
     test_count = 1
@@ -71,20 +70,21 @@ class serial_listener(object):
     dataList = [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     transmissionFlag = False
     last_received=datetime.datetime.now()
-    packet_count = 1
-    lost = 0
+    packet_count = 0
     try:
-      while packet_count<self.packet_amount+1:
+      while packet_count<1000:
         read = self.ser.read()
         value = struct.unpack('B',read)[0]
         #check to see if we have seend a start byte and we aren't currently receiving...
         if value == 85 and transmissionFlag == False:
+          #add to packet count
+          packet_count+=1
           #set receiving...
           transmissionFlag=True
           #set last_received...
           last_received = datetime.datetime.now()
         #after transmissionflag has been set, spin until we either timeout or have received a complete packet
-        while transmissionFlag and (datetime.datetime.now().microsecond - last_received.microsecond < 1500):
+        while transmissionFlag and (datetime.datetime.now().microsecond - last_received.microsecond < 1000):
           read = self.ser.read()
           value = struct.unpack('B',read)[0]
           dataList[count] = value
@@ -93,18 +93,19 @@ class serial_listener(object):
           last_received = datetime.datetime.now()
           #if we have received a whole 'packet', decode it and log the results...
           if(count==14):
+            packet_count+=1
             self.listener_logger.debug(str(packet_count)+',0') #zero for not discarded...
             decoder = serial_decoder(dataList,self.decoder_logger,packet_count,self.test_count)
             decoder.daemon = True
             decoder.start()
             transmissionFlag = False
         else:
+          print 'Finished receiving packet'
           #log an error with the packet
           if transmissionFlag:
-            lost+=1
+            packet_count+=1
+            print 'packet lost'
             self.listener_logger.debug(str(packet_count)+',1') #one for discarded...
-          print 'Packet: '+str(packet_count)+' lost: '+str(lost)
-          packet_count+=1
           #reset
           dataList = [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
           count=0

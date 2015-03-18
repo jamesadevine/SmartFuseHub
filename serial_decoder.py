@@ -47,7 +47,7 @@ class serial_decoder(Process):
     if sampleCount>0:
       voltage = float((float(5000/4095)*(float(totalVal)/float(sampleCount)))/1000)
 
-    self.networker.sendFuseData(voltage,id)
+    self.networker.sendApplianceData(voltage,id)
 
   def calculate_checksum(self,values):
     checksum = 0
