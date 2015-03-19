@@ -35,6 +35,7 @@ class smart_monitoring_networker(object):
   def sendApplianceData(self,value,applianceid):
     """
     :param value: the current reported by the appliance sensor
+    :param applianceid: the ID of the appliance sensor
     """
     data = {
         "userID":self.userID,

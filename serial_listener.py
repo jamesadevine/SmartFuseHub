@@ -10,7 +10,9 @@ class serial_listener(object):
     self.ser = serial.Serial("/dev/ttyAMA0", baudrate=9600)
     self.networker = networker
 
-   
+  """
+    Listens for packets on the serial line
+  """
   def listen(self):
     count = 0
     #8:4 hamming coding... which means for every 4 bits, 8 are produced meaning 14 bytes.
